@@ -835,7 +835,12 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
             }
             
             // Add selected button
-            if (self.displaySelectionButtons) {
+            BOOL canSelect = YES;
+            if ([self.delegate respondsToSelector:@selector(photoBrowser:canSelectPhotoAtIndex:)]) {
+                canSelect = [self.delegate photoBrowser:self canSelectPhotoAtIndex:index];
+            }
+            
+            if (self.displaySelectionButtons && canSelect) {
                 UIButton *selectedButton = [UIButton buttonWithType:UIButtonTypeCustom];
                 [selectedButton setImage:[UIImage imageForResourcePath:@"MWPhotoBrowser.bundle/ImageSelectedOff" ofType:@"png" inBundle:[NSBundle bundleForClass:[self class]]] forState:UIControlStateNormal];
                 UIImage *selectedOnImage;
@@ -1345,6 +1350,15 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     
     // Animate grid in and photo scroller out
     [_gridController willMoveToParentViewController:self];
+    
+    if (self.displaySelectionButtons) {
+        UIBarButtonItem* multipleSelectionActionButton =
+            [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction
+                                                          target:self action:@selector(multipleSelectionActionButtonTapped)];
+        
+        [self.navigationItem setLeftBarButtonItem:multipleSelectionActionButton animated:YES];
+    }
+    
     [UIView animateWithDuration:animated ? 0.3 : 0 animations:^(void) {
         _gridController.view.frame = self.view.bounds;
         CGRect newPagingFrame = [self frameForPagingScrollView];
@@ -1390,8 +1404,17 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         [tmpGridController.view removeFromSuperview];
         [tmpGridController removeFromParentViewController];
         [self setControlsHidden:NO animated:YES permanent:NO]; // retrigger timer
+        if (self.displaySelectionButtons) {
+            [self.navigationItem setLeftBarButtonItem:nil animated:YES];
+        }
     }];
 
+}
+
+- (void)multipleSelectionActionButtonTapped {
+    if ([self.delegate respondsToSelector:@selector(photoBrowserMultipleSelectionActionButtonTapped:)]) {
+        [self.delegate photoBrowserMultipleSelectionActionButtonTapped:self];
+    }
 }
 
 #pragma mark - Control Hiding / Showing
